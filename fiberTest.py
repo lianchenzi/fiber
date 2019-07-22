@@ -244,7 +244,7 @@ class FiberTest(object):
     def getCurTestTime(self):
         return self.curTaskLength
 
-
+"""
  
 t=FiberTest()
 t.setTestParameter('dev1',['test1','test2','test3','test4','test5','test6','test7','test8'],['lp'])
@@ -262,6 +262,6 @@ f=FiberTest()
 print (f==t)
 f.resumeTest()
 print ("all down")
-
+"""
 
     

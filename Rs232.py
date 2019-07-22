@@ -1,8 +1,11 @@
 from wx import WXControl
-class RS232(object):
-    def __init__(self):
-        self.controller=WXControl('COM1',9600,10)
-        self.commands=['0x55','0x66','0x77','0x05','0x01','0x02','0x03','0x04','0x06','0x07','0x27']
+class WxConfig(object):
+    def __init__(self,wx,com='COM1'):
+        self.controller=WXControl(com,9600,10)
+        if wx=='rs232':
+            self.commands=['0x55','0x66','0x77','0x05','0x01','0x02','0x03','0x04','0x06','0x07','0x27']
+        else:
+            self.commands=['0x55','0x66','0x77','0x05','0x01','0x02','0x03','0x04','0x06','0x07','0x27']
         """
         温箱控制命令11个组成为一个list，
         第0位：建立通讯
@@ -53,8 +56,6 @@ class RS232(object):
         if temp<-100 or temp>100:
             raise Exception('Invalid temperature value')
         return self.controller.execDefaultCommand(self.commands[9],[[temp,8]])  
-            
-
 
     
 

@@ -1,0 +1,11 @@
+{
+    "wx":{
+        "wxtype": "rs232",
+        "com": "COM1"
+    },
+    "board":{
+        "violate": "dev1",
+        "current": "Dev0",
+        "other": "Dev2"
+    }
+}

@@ -44,13 +44,12 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "app.py"
+                "FLASK_APP": "ws.py"
             },
             "args": [
-                "run",
-                "--no-debugger",
-                "--no-reload"
+                "run"	
             ],
+			
             "jinja": true
         },
         {
