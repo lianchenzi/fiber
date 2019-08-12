@@ -4,17 +4,23 @@ import random
 from threading import Lock
 import threading
 from flask_socketio import SocketIO,send, emit
-from flask import Flask,current_app,render_template,make_response,request
+from flask import Flask,current_app,render_template,make_response,request,send_from_directory
 from functools import wraps
 from flask_cors import CORS
 from flask_restful import Api,Resource,reqparse, abort,marshal
-from taskController import TaskController
-import configGlobal
-from dbHandle import DbHandle
-
+from libs.taskController import TaskController
+import libs.configGlobal
+from libs.dbHandle import DbHandle
+from libs.product import Product
+import os
+import json
+#import eventlet
+#eventlet.monkey_patch()
+async_mode = None
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode=None)
+socketio = SocketIO(app, async_mode=async_mode)
+#socketio = SocketIO(app)
 thread = None
 thread_lock = Lock()
 app.config.update(RESTFUL_JSON=dict(ensure_ascii=False),SECRET_KEY='secretadsfasdfa')
@@ -25,14 +31,14 @@ api = Api(app)
 def background_thread():
     while True:
         socketio.sleep(5)
-        if not configGlobal.getDown():
+        if not libs.configGlobal.getDown():
             tc=TaskController()
             #print (tc.testsStatus)
             socketio.emit('updateStatus',
                             tc.testsStatus,
                             namespace='/test')
             if tc.buf and 'buf' in tc.buf and tc.buf['buf']:
-                print (tc.buf)
+                #print (tc.buf)
                 socketio.emit('server_response',
                               tc.buf,
                               namespace='/test')
@@ -78,11 +84,59 @@ class Login(Resource):
             return packageResponse(200,"success",data)
         else:
             return packageResponse(403,"invalid user",'')
+class Device(Resource):
+    def __init__(self):
+        self.data=request.get_json()
+    def get(self):
+        db=DbHandle()
+        wx=db.getWx()
+        data={}
+        data['wxList']=wx
+        devConfigFile=os.path.join('config','dev.json')
+        with open(devConfigFile,"r") as f:
+            temp=json.load(f)
+            data['wx']=temp['wx']
+            data['board']=temp['board']
+        return packageResponse(200,'success',data)
+
+    def post(self):
+        devConfigFile=os.path.join('config','dev.json')
+        temp=None
+        with open(devConfigFile,"r") as f:
+            temp=json.load(f)
+        for m in self.data:
+            for n in self.data[m]:
+                if m in temp and n in temp[m]:
+                    temp[m][n]=self.data[m][n]
+        print (temp)
+        with open(devConfigFile,"w") as f:
+            json.dump(temp,f)
+        return packageResponse(200,"success","")
+
 class Task(Resource):
     def __init__(self):
         self.data=request.get_json()
+        self.parser=reqparse.RequestParser()
+        self.parser.add_argument('action', type=str)
+
+    def get(self):
+        args = self.parser.parse_args()
+        print (args)
+        if 'action' in args and not libs.configGlobal.getDown():
+            if args['action']=='stop':
+                libs.configGlobal.setDown(True)
+            elif args['action']=='restart':
+                    libs.configGlobal.setDown(True)
+                    
+                    tc=TaskController()
+                    t=threading.Thread(target=tc.restartTask)
+                    t.setDaemon(False)
+                    t.start()
+        return packageResponse(200,"success","")
+
     def post(self):
         #print(self.data)
+        
         tc=TaskController(self.data)
         parseReslt=tc.parseTask()
         print (parseReslt)
@@ -92,10 +146,50 @@ class Task(Resource):
         t.setDaemon(False)
         t.start()
         return packageResponse(200,"success","")
+
+class ProductConfig(Resource):
+    def __init__(self):
+        self.data=request.get_json()
+        self.parser=reqparse.RequestParser()
+        self.parser.add_argument('productName', type=str)
+        self.parser.add_argument('productType', type=str)
+        #self.parser=reqparse.RequestParser()
+        self.prodObj=Product()
+
+    def get(self):
+        args = self.parser.parse_args()
+        productName=''
+        productType=''
+        print(args)
+        if 'productName' in args:
+            productName=args['productName']
+        if 'productType' in args:
+            productType=args['productType']
+        result=self.prodObj.getProductConfig(productName,productType)
+        if result[0]:
+            return packageResponse(200,"success",result[1])
+        else:
+            return packageResponse(400,result[1],'')
+        
+        
+    def post(self):
+        result=self.prodObj.addNewProduct(self.data)
+        if result[0]:
+            return packageResponse(200,"success","")
+        else:
+            return packageResponse(400,result[1],"")
+
+    def put(self):
+        result=self.prodObj.updateProduct(self.data['product'],self.data['testType'],self.data['config'])
+        if result[0]:
+            return packageResponse(200,"success","")
+        else:
+            return packageResponse(400,result[1],"")
+
 class Running(Resource):
     def get(self):
         data={}
-        if not configGlobal.getDown():
+        if not libs.configGlobal.getDown():
             tc=TaskController()
             data['buf']=tc.buf
             data['info']={'running': 'Busy','test': '','temperature': str(tc.curTemperature),'current': ''}
@@ -111,6 +205,16 @@ class Running(Resource):
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
+
+@app.route('/download', methods=['GET'])
+def download():
+    fileEntry=request.args.get('fileEntry')
+    directory="\\".join(fileEntry.split('\\')[0:-1])
+    filename=fileEntry.split('\\')[-1]
+    print (directory)
+    response = make_response(send_from_directory(directory, filename, as_attachment=True))
+    response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('utf-8'))
+    return response
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
@@ -136,7 +240,9 @@ def packageResponse(code,msg, data):
 api.add_resource(Login,'/login',endpoint='Login')
 api.add_resource(Task,'/task',endpoint='Task')
 api.add_resource(Running,'/running',endpoint='Running')
+api.add_resource(Device,'/device',endpoint='Device')
+api.add_resource(ProductConfig,'/product',endpoint='Product')
 if __name__ == '__main__':
-    #app.debug=True
+    app.debug=True
     socketio.run(app)
     #app.run(port=5000)

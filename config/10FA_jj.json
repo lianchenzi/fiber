@@ -1,86 +1,73 @@
 {
-	"test-tasks": {
-		"basic": {
-			"temperature": "25",
-			"testItems": [
-				"jx", "lz", "fbl"
-			]
-		},
-		"normal": {
-			"temperature": "25",
-			"testItems": [
-				"lp", "lp_cfx", "bdys", "bdys_cfx"
-			]
-		},
-		"high": {
-			"temperature": "55",
-			"testItems": [
-				"lp", "bdys"
-			]
-		},
-		"low": {
-			"temperature": "-55",
-			"testItems": [
-				"lp", "bdys"
-			]
-		}
-	},
 	"test-settings": {
-		"normal": {
+		"high": {
 			"lp": {
-				"duration": "5",
-				"wait": "5",
-				"frequency": "1",
-				"samples": "3500",
-				"stableFactor": "2"
-			},
-			"lp_cfx": {
-				"repetation": "2",
-				"wait": "2",
-				"duration": "5",
-				"powerDown": "5"
+				"stableFactor": 2,
+				"wait": 120,
+				"samples": 3200,
+				"frequency": 1,
+				"duration": 300
 			},
 			"bdys": {
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4",
-				"samplesPerSpeed": "10",
-				"samples": "3500",
-				"frequency": "1"
+				"samples": 3200,
+				"samplesPerSpeed": 10,
+				"frequency": 1,
+				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
+			}
+		},
+		"normal": {
+			"lp_cfx": {
+				"wait": 120,
+				"repetition": 6,
+				"duration": 300,
+				"powerDown": 300
+			},
+			"lp": {
+				"stableFactor": 2,
+				"wait": 120,
+				"samples": 3200,
+				"frequency": 1,
+				"duration": 300
 			},
 			"bdys_cfx": {
-				"repetation": "2",
-				"powerDown": "2"
+				"repetition": 6,
+				"powerDown": 300
+			},
+			"bdys": {
+				"samples": 3200,
+				"samplesPerSpeed": 10,
+				"frequency": 1,
+				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
 			}
 		},
 		"low": {
 			"lp": {
-				"duration": "5",
-				"wait": "5",
-				"frequency": "1",
-				"samples": "3500",
-				"stableFactor": "2"
+				"stableFactor": 2,
+				"wait": 120,
+				"samples": 3200,
+				"frequency": 1,
+				"duration": 300
 			},
-
 			"bdys": {
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4",
-				"samplesPerSpeed": "10",
-				"samples": "3500",
-				"frequency": "1"
+				"samples": 3200,
+				"samplesPerSpeed": 10,
+				"frequency": 1,
+				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
 			}
-		},
+		}
+	},
+	"test-tasks": {
 		"high": {
-			"lp": {
-				"duration": "5",
-				"wait": "5",
-				"frequency": "1",
-				"samples": "3500",
-				"stableFactor": "2"
-			},
-			"bdys": {
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4",
-				"samplesPerSpeed": "10",
-				"samples": "3500",
-				"frequency": "1"
-			}
+			"testItems": ["lp", "jx", "lz", "fbl", "bdys"],
+			"temperature": 55
+		},
+		"normal": {
+			"testItems": ["lp", "lp_cfx", "jx", "lz", "fbl","bdys", "bdys_cfx"],
+			"temperature": 25
+		},
+		"low": {
+			"testItems": ["lp", "jx", "lz", "fbl", "bdys"],
+			"temperature": -55
 		}
 	}
 }
