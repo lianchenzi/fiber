@@ -107,39 +107,96 @@ class DbHandle(object):
         """
         self.cursor.execute(sql)
         self.conn.commit()
-    def insert_lp(self,product,date,temperature,test_type,bh,lp,lp_wdx,data_file):
+    def insert_lp(self,product,date,temperature,test_type,bh,lp,lp_wdx,data_file,session):
         sql="""
-        insert into lp (product,test_date,temperature,test_type,bh,lp,lp_wdx,data_file) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
-        """ %(product,date,temperature,test_type,bh,self.asNum(lp),self.asNum(lp_wdx),data_file)
+        insert into lp (product,test_date,temperature,test_type,bh,lp,lp_wdx,data_file,session) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """ %(product,date,temperature,test_type,bh,self.asNum(lp),self.asNum(lp_wdx),data_file,session)
         print (sql)
         self.cursor.execute(sql)
         self.conn.commit()
-    def insert_lp_cfx(self,product,date,temperature,test_type,bh,lp_cfx,data_file):
+    def insert_lp_cfx(self,product,date,temperature,test_type,bh,lp_cfx,data_file,session):
         sql="""
-        insert into lp_cfx (product,test_date,temperature,test_type,bh,lp_cfx,data_file) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\')
-        """ %(product,date,temperature,test_type,bh,self.asNum(lp_cfx),data_file)
+        insert into lp_cfx (product,test_date,temperature,test_type,bh,lp_cfx,data_file,session) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """ %(product,date,temperature,test_type,bh,self.asNum(lp_cfx),data_file,session)
         print (sql)
         self.cursor.execute(sql)
         self.conn.commit()
-    def insert_bdys(self,product,date,temperature,test_type,bh,bdys,bdys_xxd,data_file):
+    def insert_bdys(self,product,date,temperature,test_type,bh,bdys,bdys_xxd,data_file,session):
         sql="""
-        insert into bdys (product,test_date,temperature,test_type,bh,bdys,bdys_xxd,data_file) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
-        """ %(product,date,temperature,test_type,bh,self.asNum(bdys),self.asNum(bdys_xxd),data_file)
+        insert into bdys (product,test_date,temperature,test_type,bh,bdys,bdys_xxd,data_file,session) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """ %(product,date,temperature,test_type,bh,self.asNum(bdys),self.asNum(bdys_xxd),data_file,session)
         print (sql)
         self.cursor.execute(sql)  
         self.conn.commit()
-    def insert_bdys_cfx(self,product,date,temperature,test_type,bh,bdys,bdys_xxd,data_file):
+    def insert_bdys_cfx(self,product,date,temperature,test_type,bh,bdys,bdys_xxd,data_file,session):
         sql="""
-        insert into bdys_cfx (product,test_date,temperature,test_type,bh,bdys,bdys_xxd,data_file) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
-        """ %(product,date,temperature,test_type,bh,self.asNum(bdys),self.asNum(bdys_xxd),data_file)
+        insert into bdys_cfx (product,test_date,temperature,test_type,bh,bdys,bdys_xxd,data_file,session) values (\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """ %(product,date,temperature,test_type,bh,self.asNum(bdys),self.asNum(bdys_xxd),data_file,session)
         print (sql)
         self.cursor.execute(sql)  
         self.conn.commit()
+    def insertSession(self,sessionId,product,testObjects,testSettings,testType,testDate):
+        initStatus=0
+        sql="""
+        insert into session (sessionId,status,product,testObjects,testSettings,testType,testDate) values (\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """%(sessionId,initStatus,product,testObjects,testSettings,testType,testDate)
+        self.cursor.execute(sql)  
+        self.conn.commit()
+    def updateSession(self,sessionId):
+        sql="""
+        update session set status=1 where sessionId=\'%s\'
+        """%(sessionId)
+        self.cursor.execute(sql)  
+        self.conn.commit()
+    def getSessionId(self,sessionId):
+        sql="""
+        select * from session where sessionId=\'%s\'
+        """%(sessionId)
+        return self.search(sql)
+    def deleteInvalidDataFile(self,table,sessions):
+        sql="select data_file from "+table+" where session in ("+sessions+")"
+        result=self.search(sql)
+        if result:
+            for item in result:
+                if os.path.exists(item[0]) and os.path.isfile(item[0]):
+                    os.remove(item[0])
+    def deleteInvalidSession(self):
+        sql="""
+        select sessionId from session where status=0
+        """
+        result=self.search(sql)
+        print (result)
+        if result:
+            invalSessionsStr='\''+result[0][0]+'\''
+            for i in range(1,len(result)):
+                invalSessionsStr+=',\''+result[i][0]+'\''
+            self.deleteInvalidDataFile('lp',invalSessionsStr)
+            sql="delete from lp where session in ("+invalSessionsStr+")"
+            self.cursor.execute(sql) 
+            self.deleteInvalidDataFile('lp_cfx',invalSessionsStr)
+            sql="delete from lp_cfx where session in ("+invalSessionsStr+")"
+            self.cursor.execute(sql) 
+            self.deleteInvalidDataFile('bdys',invalSessionsStr)
+            sql="delete from bdys where session in ("+invalSessionsStr+")"
+            self.cursor.execute(sql) 
+            self.deleteInvalidDataFile('bdys_cfx',invalSessionsStr)
+            sql="delete from bdys_cfx where session in ("+invalSessionsStr+")"
+            self.cursor.execute(sql) 
+            sql="delete from session where sessionId in ("+invalSessionsStr+")"
+            self.cursor.execute(sql) 
+            self.conn.commit()
     def search(self,sql):
-        print (sql)
         self.cursor.execute(sql)
         values=self.cursor.fetchall()
         return values
+    def searchOne(self,sql):
+        #print (sql)
+        self.cursor.execute(sql)
+        values=self.search(sql)
+        if values:
+            return values[0]
+        else:
+            return None
     def verifyUser(self,username,password):
         sql= "select * from user where username =\'"+username+"\' and password=\'"+password+"\'"
         result=self.search(sql)
@@ -165,9 +222,8 @@ del db
 
 
 db=DbHandle()
-db.createTables()
-sql='select * from bdys'
-print(db.search(sql))
+db.deleteInvalidSession()
+
 #print(db.getWx())
 #db.addUser('admin','admin',1)
 #db.createWxTable()

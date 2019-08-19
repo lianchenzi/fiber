@@ -17,7 +17,7 @@ np.set_printoptions(suppress=True)
 DATA_DIR='data'
 DB_DIR=os.path.join(DATA_DIR,'result.db')
 class TestExector(threading.Thread):
-    def __init__(self,queue,testType,date,niDevName,rs,objectsLists,configFile,product):
+    def __init__(self,queue,testType,date,niDevName,rs,objectsLists,configFile,session,product):
         Thread.__init__(self)
         self.singal = threading.Event()
         self.queue=queue
@@ -28,6 +28,7 @@ class TestExector(threading.Thread):
         self.testType=testType
         self.rs=rs
         self.rs.connect()
+        self.session=session
         self.curTaskLeftTime=0
         self.curTaskDown=False
         self.niDevName=niDevName
@@ -176,7 +177,7 @@ class TestExector(threading.Thread):
         else:
             return False, "Unknown test"
         db=DbHandle()
-        dataPath=os.path.join(DATA_DIR,os.path.join(self.testDate,self.product))
+        dataPath=os.path.join(DATA_DIR,os.path.join(self.testDate,os.path.join(self.testType,self.product)))
         t=''
         if temperature>40:
             t='high'
@@ -194,14 +195,15 @@ class TestExector(threading.Thread):
                 dataKey=test+'_data'
                 temp=result[i]
                 bh=self.objectLists[bhIndex[i]]
-                resultFile=os.path.join(testPath,bh)+'.log'
+                fileName=bh+'_'+self.session+'.txt'
+                resultFile=os.path.join(testPath,fileName)
                 #resultFile2=os.path.join(testPath,bh)+'_result.log'
                 if os.path.exists(resultFile):
                     os.remove(resultFile)              
                 with open(resultFile,'a') as f:
                     f.write("\n".join(list(map(self.asNum, temp[dataKey]))))
                 if test=="lp":
-                    db.insert_lp(self.product,self.testDate,temperature,self.testType,bh,temp['lp'],temp['lp_wdx'],resultFile)
+                    db.insert_lp(self.product,self.testDate,temperature,self.testType,bh,temp['lp'],temp['lp_wdx'],resultFile,self.session)
                     
                     with open(resultFile,'a') as f:
                         f.write('\n\n')
@@ -210,12 +212,12 @@ class TestExector(threading.Thread):
                         f.write(r'零位稳定性: '+ str(temp['lp_wdx']) +'\n' )
                     
                 elif test=="lp_cfx":
-                    db.insert_lp_cfx(self.product,self.testDate,temperature,self.testType,bh,temp['lp_cfx'],resultFile)
+                    db.insert_lp_cfx(self.product,self.testDate,temperature,self.testType,bh,temp['lp_cfx'],resultFile,self.session)
                 elif test=="bdys":
-                    db.insert_bdys(self.product,self.testDate,temperature,self.testType,bh,temp['bdys'],temp['bdys_xxd'],resultFile)
+                    db.insert_bdys(self.product,self.testDate,temperature,self.testType,bh,temp['bdys'],temp['bdys_xxd'],resultFile,self.session)
 
                 elif test=="bdys_cfx":
-                    db.insert_bdys_cfx(self.product,self.testDate,temperature,self.testType,bh,temp['bdys'],temp['bdys_xxd'],resultFile)
+                    db.insert_bdys_cfx(self.product,self.testDate,temperature,self.testType,bh,temp['bdys'],temp['bdys_xxd'],resultFile,self.session)
         else:
             del db
             return False, "Test result is empty or wrong"

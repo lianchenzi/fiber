@@ -123,29 +123,30 @@ class Task(Resource):
         args = self.parser.parse_args()
         print (args)
         if 'action' in args and not libs.configGlobal.getDown():
+            tc=TaskController()
             if args['action']=='stop':
+                tc.deleteInvalidRecords()
                 libs.configGlobal.setDown(True)
             elif args['action']=='restart':
-                    libs.configGlobal.setDown(True)
-                    
-                    tc=TaskController()
-                    t=threading.Thread(target=tc.restartTask)
-                    t.setDaemon(False)
-                    t.start()
-        return packageResponse(200,"success","")
-
+                tc.deleteInvalidRecords()
+                libs.configGlobal.setDown(True)
+                t=threading.Thread(target=tc.restartTask)
+                t.setDaemon(False)
+                t.start()
+        return packageResponse(200,"success",{'testSession':tc.session})
     def post(self):
         #print(self.data)
         
         tc=TaskController(self.data)
         parseReslt=tc.parseTask()
+        tc.deleteInvalidRecords()
         print (parseReslt)
         if not parseReslt[0]:
             return packageResponse(401,parseReslt[1],"")
         t=threading.Thread(target=tc.runTests)
         t.setDaemon(False)
         t.start()
-        return packageResponse(200,"success","")
+        return packageResponse(200,"success",{'testSession':tc.session})
 
 class ProductConfig(Resource):
     def __init__(self):

@@ -8,6 +8,7 @@ import os
 import libs.configGlobal
 import random
 from libs.wx import WxConfig
+from libs.dbHandle import DbHandle
 class TaskController(object):
     _instance_lock = threading.Lock()
     def __init__(self,*args):
@@ -17,7 +18,7 @@ class TaskController(object):
             self.buf=dict()
             self.dataDir='data'
             self.taskJson=args[0]
-            self.session=random.randint(100000,999999)
+            self.session=self._generateSessionStr()
             self.isCurrentBusy=False
             self.testsStatus=list()
             self.temperatures={}
@@ -27,6 +28,7 @@ class TaskController(object):
             self.curTemperature=None
             self.isRestart=False
             self.sessionFile=''
+            #self.db=DbHandle()
             t=threading.Thread(target=self._recvTestData)
             t.setDaemon(True)
             t.start()
@@ -42,6 +44,22 @@ class TaskController(object):
                 if not hasattr(TaskController, "_instance"):
                     TaskController._instance = object.__new__(cls)  
         return TaskController._instance
+    def _generateSessionStr(self):
+        db=DbHandle()
+        while True:
+            sessionStr=self._randomStr()
+            if not db.getSessionId(sessionStr):
+                del db
+                return sessionStr
+    def _randomStr(self):
+        #randomlength=10
+        str = ''
+        chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789'
+        #chars='abcdefghijklmnopqrstuvwxyz0123456'
+        length = len(chars) - 1
+        for i in range(15):
+            str+=chars[random.randint(0, length)]
+        return str
     def _recvTestData(self):
         while True:
             if not self.taskJson:
@@ -85,6 +103,7 @@ class TaskController(object):
             self.isRestart=False
             self.temperatures={}
             self.curTemperature=None
+            self.session=self._generateSessionStr()
             self.testList=dict()
             self.bdysSpeeds=[]
             self.sessionFile=''
@@ -112,7 +131,10 @@ class TaskController(object):
         time.sleep(10)
         print(self.parseTask())
         self.runTests()
-
+    def deleteInvalidRecords(self):
+        db=DbHandle()
+        db.deleteInvalidSession()
+        del db
     def runTests(self):
         if self.taskJson is None or self.testList is None:
             self.testTaskInit()
@@ -122,6 +144,11 @@ class TaskController(object):
             self.testTaskInit()
             return False, 'Test temperature is None'
         today=time.strftime("%Y-%m-%d")
+        db=DbHandle()
+        db.insertSession(self.session,self.taskJson['product'],',,,'.join(self.taskJson['objects-list']),\
+            json.dumps(self.testList),self.taskJson['test-type'],today)
+        del db
+        
         temp=list(self.taskJson['test-tasks'].keys())
         sortedtemp=list()
         if 'basic' in temp and self.taskJson['test-tasks']['basic']['testItems']:
@@ -133,7 +160,7 @@ class TaskController(object):
         if 'high' in temp and self.taskJson['test-tasks']['high']['testItems']:
             sortedtemp.append('high')
         te=TestExector(self.queue,self.taskJson['test-type'],today,self.devConfig['ni-dev'],\
-        self.wx,self.taskJson['test-objects'],self.sessionFile,self.taskJson['product'])
+        self.wx,self.taskJson['test-objects'],self.sessionFile,self.session,self.taskJson['product'])
         for i in range(len(sortedtemp)):
             t=sortedtemp[i]
             self.testsStatus[i]['status']=2
@@ -174,6 +201,9 @@ class TaskController(object):
                 self.buf={}
             self.testsStatus[i]['status']=1
         print ("all Down")
+        db=DbHandle()
+        db.updateSession(self.session)
+        del db
         time.sleep(5)
         self.testTaskInit()
     def combinConfig(self):
