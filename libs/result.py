@@ -1,7 +1,7 @@
 import os
 import json
 import copy
-from dbHandle import DbHandle
+from libs.dbHandle import DbHandle
 import datetime
 
 class TestResult(object):
@@ -16,9 +16,11 @@ class TestResult(object):
         sql="select testSettings from session where status=1 and sessionId=\'"+sessionId+"\'"
         result=self.db.searchOne(sql)
         return json.loads(result[0]) if result else {}
- 
+    def judgeResult(self,testItem,temperature,value):
+        pass
+        return True
     def getTestResult(self,sessionId,bh,testSettings):
-        result={}
+        result=[]
         if not bh :
             return result
         if not sessionId:
@@ -27,7 +29,6 @@ class TestResult(object):
         testItems=[]
         sql='select '
         for key,val in testSettings.items():
-            result[key]={}
             testItems=val
             if key=='normal':
                 temperature='15<temperature<35'
@@ -36,34 +37,37 @@ class TestResult(object):
             elif key=='high':
                 temperature='40<temperature<60'
             for item in testItems:
-                result[key][item]={}
                 if item=='lp':
-                    sql+='lp, lp_wdx from lp where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
+                    sql+='lp, lp_wdx,data_file from lp where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
                     tempResult=self.db.searchOne(sql)
                     if tempResult:
-                        result[key][item]['lp']=tempResult[0]
-                        result[key][item]['lp_wdx']=tempResult[1]
+                        result.append({'testItem': 'lp','temperature':key,'testResult':tempResult[0],'judgeResult':1 if self.judgeResult('lp',key,tempResult[0]) else 0, 'dataFile':tempResult[2]})
+                        result.append({'testItem': 'lp_wdx','temperature': key,'testResult':tempResult[1],'judgeResult':1 if self.judgeResult('lp_wdx',key,tempResult[1]) else 0, 'dataFile':'-'})
                 elif item=='lp_cfx':
-                    sql+='lp_cfx from lp_cfx where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
+                    sql+='lp_cfx,data_file from lp_cfx where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
                     tempResult=self.db.searchOne(sql)
                     if tempResult:
-                        result[key][item]['lp_cfx']=tempResult[0]         
+                        result.append({'testItem': 'lp_cfx','temperature':key,'testResult':tempResult[0],'judgeResult':1 if self.judgeResult('lp_cfx',key,tempResult[0]) else 0, 'dataFile':tempResult[1]})   
                 elif item=='bdys':
-                    sql+='bdys,bdys_xxd from bdys where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
+                    sql+='bdys,bdys_xxd,data_file from bdys where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
                     tempResult=self.db.searchOne(sql)
                     if tempResult:
-                        result[key][item]['bdys']=tempResult[0]
-                        result[key][item]['bdys_xxd']=tempResult[1]                      
+                        result.append({'testItem': 'bdys','temperature':key,'testResult':tempResult[0],'judgeResult':1 if self.judgeResult('bdys',key,tempResult[0]) else 0, 'dataFile':tempResult[2]})
+                        result.append({'testItem': 'bdys_xxd','temperature':key,'testResult':tempResult[1],'judgeResult':1 if self.judgeResult('bdys_xxd',key,tempResult[1]) else 0, 'dataFile':'-'})              
                 elif item=='bdys_cfx':
-                    sql+='bdys,bdys_xxd from bdys_cfx where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
+                    sql+='bdys,bdys_xxd,data_file from bdys_cfx where bh=\''+bh+'\' and session=\''+sessionId+'\' and '+temperature
                     tempResult=self.db.searchOne(sql)
                     if tempResult:
-                        result[key][item]['bdys']=tempResult[0]  
-                        result[key][item]['bdys_xxd']=tempResult[1]
+                        result.append({'testItem': 'bdys_cfx','temperature':key,'testResult':tempResult[0],'judgeResult':1 if self.judgeResult('bdys',key,tempResult[0]) else 0, 'dataFile':tempResult[2]})
+                        result.append({'testItem': 'bdys_xxd_cfx','temperature':key,'testResult':tempResult[1],'judgeResult':1 if self.judgeResult('bdys_xxd',key,tempResult[1]) else 0, 'dataFile':'-'})    
         return result
-    def getSessionResult(self,sessionId):
+    def getSessionResult(self,sessionId,bh):
         testSettings=self.getTestSetItemsFromSession(sessionId)
-        bhs=self.getBhFromSession(sessionId)
+        bhs=[]
+        if not bh:
+            bhs=self.getBhFromSession(sessionId)
+        else:
+            bhs.append(bh)
         sql="select product,testType,testDate from session where status=1 and sessionId=\'"+sessionId+"\'" 
         generalResult=self.db.searchOne(sql)
         result=[]
@@ -103,7 +107,7 @@ class TestResult(object):
         if bh:
             if condition:
                 condition+=' and '
-            condition+= 'bh=\''+bh+'\''
+            condition+= 'testObjects like \'%'+bh+'%\''
         if testType:
             if condition:
                 condition+=' and '
@@ -113,16 +117,21 @@ class TestResult(object):
                 condition+=' and '
             condition+= 'product=\''+product+'\''        
         sessions=self.getSessionIdsFromCond(condition)
+        print (sessions)
         results=[]
         for session in sessions:
-            results+=self.getSessionResult(session)
+            results+=self.getSessionResult(session,bh)
         return results
              
 
         
-
-testSettings="""{"normal": ["lp"]}"""
+"""
+testSettings="{\"normal\": [\"lp\"]}"
 sessionId="TTRGzW1eZS8reTx"
+tr=TestResult()
+print(tr.getSessionResult(sessionId,'16'))
+
 bh="1"
 tr=TestResult()
-print(tr.getResultFromCond('2019-08-17','2019-08-17','','defined','10FA'))
+print(tr.getResultFromCond('','','','',''))
+"""

@@ -12,7 +12,9 @@ from libs.taskController import TaskController
 import libs.configGlobal
 from libs.dbHandle import DbHandle
 from libs.product import Product
+from libs.result import TestResult
 import os
+from datetime import datetime, date, timedelta
 import json
 #import eventlet
 #eventlet.monkey_patch()
@@ -186,6 +188,52 @@ class ProductConfig(Resource):
             return packageResponse(200,"success","")
         else:
             return packageResponse(400,result[1],"")
+class TestObject(Resource):
+    def __init__(self):
+        self.parser=reqparse.RequestParser()
+        self.parser.add_argument('session', type=str)
+        self.resObj=TestResult()
+    def get(self):
+        args = self.parser.parse_args()
+        data=self.resObj.getBhFromSession(args['session'])
+        return packageResponse(200,"success",data)
+class Result(Resource):
+    def __init__(self):
+        self.parser=reqparse.RequestParser()
+        self.parser.add_argument('session', type=str)
+        self.parser.add_argument('startDate', type=str)
+        self.parser.add_argument('endDate', type=str)
+        self.parser.add_argument('bh', type=str)
+        self.parser.add_argument('product', type=str)
+        self.parser.add_argument('testType', type=str)
+        #self.parser=reqparse.RequestParser()
+        self.resObj=TestResult()
+    def get(self):
+        args = self.parser.parse_args()
+        if args['session']:
+            result=self.resObj.getSessionResult(args['session'],args['bh'])
+            return packageResponse(200, "success", result)
+        else:
+            endDate=datetime.now().strftime('%Y-%m-%d')
+            startDate=(date.today() + timedelta(days = -30)).strftime("%Y-%m-%d")
+            bh=''
+            product=''
+            testType=''
+            if args['startDate'] and args['endDate']:
+                startDate=args['startDate']
+                endDate=args['endDate']
+            if args['bh']:
+                bh=args['bh']
+            if args['product']:
+                product=args['product']
+            if args['testType']:
+                testType=args['testType']
+            result=self.resObj.getResultFromCond(startDate,endDate,bh,testType,product)
+            return packageResponse(200, "success", result)
+            
+            
+
+
 
 class Running(Resource):
     def get(self):
@@ -243,6 +291,8 @@ api.add_resource(Task,'/task',endpoint='Task')
 api.add_resource(Running,'/running',endpoint='Running')
 api.add_resource(Device,'/device',endpoint='Device')
 api.add_resource(ProductConfig,'/product',endpoint='Product')
+api.add_resource(Result,'/result',endpoint='Result')
+api.add_resource(TestObject,'/bhs',endpoint='TestObject')
 if __name__ == '__main__':
     app.debug=True
     socketio.run(app)
