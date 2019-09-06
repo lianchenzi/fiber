@@ -135,11 +135,11 @@ class DbHandle(object):
         print (sql)
         self.cursor.execute(sql)  
         self.conn.commit()
-    def insertSession(self,sessionId,product,testObjects,testSettings,testType,testDate):
+    def insertSession(self,sessionId,product,bh,testSettings,testType,testDate):
         initStatus=0
         sql="""
-        insert into session (sessionId,status,product,testObjects,testSettings,testType,testDate) values (\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
-        """%(sessionId,initStatus,product,testObjects,testSettings,testType,testDate)
+        insert into session (sessionId,status,product,bh,testSettings,testType,testDate) values (\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')
+        """%(sessionId,initStatus,product,bh,testSettings,testType,testDate)
         self.cursor.execute(sql)  
         self.conn.commit()
     def updateSession(self,sessionId):
@@ -148,6 +148,14 @@ class DbHandle(object):
         """%(sessionId)
         self.cursor.execute(sql)  
         self.conn.commit()
+    def updateTable(self, table, updateValue, cond):
+        sql="update " +table+ " set " +updateValue
+        if cond:
+            sql+=" where " + cond
+        print (sql)
+        self.cursor.execute(sql)  
+        self.conn.commit()       
+
     def getSessionId(self,sessionId):
         sql="""
         select * from session where sessionId=\'%s\'
@@ -190,7 +198,7 @@ class DbHandle(object):
         values=self.cursor.fetchall()
         return values
     def searchOne(self,sql):
-        #print (sql)
+        print (sql)
         self.cursor.execute(sql)
         values=self.search(sql)
         if values:

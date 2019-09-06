@@ -9,6 +9,7 @@ import libs.configGlobal
 import random
 from libs.wx import WxConfig
 from libs.dbHandle import DbHandle
+from libs.result import TestResult
 class TaskController(object):
     _instance_lock = threading.Lock()
     def __init__(self,*args):
@@ -88,12 +89,14 @@ class TaskController(object):
                 #print(self.buf)
             if temp['test']=='bdys' or temp['test']=='bdys_cfx':
                 if self.bdysSpeeds:
-                    if 'buf' not in self.buf or  len(temp['buf'][0])==1:
+                    if 'buf' not in self.buf or len(temp['buf'][0])==1:
                         self.buf['buf']=[]
                     testData={'speed':str(self.bdysSpeeds[len(temp['buf'][0])-1])}
+
                     for i in range(len(temp['buf'])):
                         testData[self.taskJson['objects-list'][i]]=temp['buf'][i][-1]
                     self.buf['buf'].append(testData)
+                print (self.buf)
     def testTaskInit(self):
             self.buf=dict()
             self.taskJson={}
@@ -145,8 +148,8 @@ class TaskController(object):
             return False, 'Test temperature is None'
         today=time.strftime("%Y-%m-%d")
         db=DbHandle()
-        db.insertSession(self.session,self.taskJson['product'],',,,'.join(self.taskJson['objects-list']),\
-            json.dumps(self.testList),self.taskJson['test-type'],today)
+        for item in self.taskJson['objects-list']:
+            db.insertSession(self.session,self.taskJson['product'],item,json.dumps(self.testList),self.taskJson['test-type'],today)
         del db
         
         temp=list(self.taskJson['test-tasks'].keys())
@@ -201,9 +204,9 @@ class TaskController(object):
                 self.buf={}
             self.testsStatus[i]['status']=1
         print ("all Down")
-        db=DbHandle()
-        db.updateSession(self.session)
-        del db
+        tr=TestResult()
+        tr.updateSession(self.session)
+        del tr
         time.sleep(5)
         self.testTaskInit()
     def combinConfig(self):
@@ -220,18 +223,20 @@ class TaskController(object):
             template=temp['test-settings']
         if testType=='defined':
             userConfig=self.taskJson['test-settings']
-            for temperature in template:
-                if temperature not in userConfig:
+        else:
+            userConfig=template
+        for temperature in template:
+            if temperature not in userConfig:
+                continue
+            for test in template[temperature]:
+                if test not in userConfig[temperature]:
                     continue
-                for test in template[temperature]:
-                    if test not in userConfig[temperature]:
-                        continue
-                    for item in template[temperature][test]:
-                        if item in userConfig[temperature][test]:
+                for item in template[temperature][test]:
+                    if item in userConfig[temperature][test]:
                             #print (temperature,test,item)
-                            template[temperature][test][item]=userConfig[temperature][test][item]
-                        if test=='bdys' and item=='speeds':
-                            self.bdysSpeeds=[int(x) for x in template[temperature][test][item].split(',')]
+                        template[temperature][test][item]=userConfig[temperature][test][item]
+                    if test=='bdys' and item=='speeds':
+                        self.bdysSpeeds=[int(x) for x in template[temperature][test][item].split(',')]
         for f in os.listdir(tempConfigPath):
             os.remove(os.path.join(tempConfigPath,f))
         self.sessionFile=os.path.join(tempConfigPath,product+'_'+str(self.session)+'.json')

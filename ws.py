@@ -137,8 +137,7 @@ class Task(Resource):
                 t.start()
         return packageResponse(200,"success",{'testSession':tc.session})
     def post(self):
-        #print(self.data)
-        
+        print(self.data)
         tc=TaskController(self.data)
         parseReslt=tc.parseTask()
         tc.deleteInvalidRecords()
@@ -215,20 +214,24 @@ class Result(Resource):
             return packageResponse(200, "success", result)
         else:
             endDate=datetime.now().strftime('%Y-%m-%d')
-            startDate=(date.today() + timedelta(days = -30)).strftime("%Y-%m-%d")
+            #startDate=(date.today() + timedelta(days = -30)).strftime("%Y-%m-%d")
+            startDate=endDate
             bh=''
             product=''
             testType=''
+            print (args)
             if args['startDate'] and args['endDate']:
                 startDate=args['startDate']
                 endDate=args['endDate']
-            if args['bh']:
+            if args['bh'] != 'all':
                 bh=args['bh']
-            if args['product']:
+            if args['product'] != 'all':
                 product=args['product']
-            if args['testType']:
+            if args['testType'] != 'all':
                 testType=args['testType']
-            result=self.resObj.getResultFromCond(startDate,endDate,bh,testType,product)
+            print (startDate,endDate,bh,product,testType)
+            result=self.resObj.getResultFromCond(startDate,endDate,bh,testType,product,general=True)
+            print (result)
             return packageResponse(200, "success", result)
             
             

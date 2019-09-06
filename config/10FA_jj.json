@@ -3,56 +3,56 @@
 		"high": {
 			"lp": {
 				"stableFactor": 2,
-				"wait": 120,
+				"wait": 20,
 				"samples": 3200,
 				"frequency": 1,
-				"duration": 300
+				"duration": 30
 			},
 			"bdys": {
 				"samples": 3200,
 				"samplesPerSpeed": 10,
 				"frequency": 1,
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
+				"speeds": "-1,0,1"
 			}
 		},
 		"normal": {
 			"lp_cfx": {
-				"wait": 120,
-				"repetition": 6,
-				"duration": 300,
-				"powerDown": 300
+				"wait": 10,
+				"repetition": 1,
+				"duration": 30,
+				"powerDown": 3
 			},
 			"lp": {
 				"stableFactor": 2,
-				"wait": 120,
+				"wait": 10,
 				"samples": 3200,
 				"frequency": 1,
-				"duration": 300
+				"duration": 30
 			},
 			"bdys_cfx": {
-				"repetition": 6,
-				"powerDown": 300
+				"repetition": 1,
+				"powerDown": 30
 			},
 			"bdys": {
 				"samples": 3200,
 				"samplesPerSpeed": 10,
 				"frequency": 1,
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
+				"speeds": "-1,0,1"
 			}
 		},
 		"low": {
 			"lp": {
 				"stableFactor": 2,
-				"wait": 120,
+				"wait": 10,
 				"samples": 3200,
 				"frequency": 1,
-				"duration": 300
+				"duration": 30
 			},
 			"bdys": {
 				"samples": 3200,
 				"samplesPerSpeed": 10,
 				"frequency": 1,
-				"speeds": "-4,-3,-2,-1,0,1,2,3,4"
+				"speeds": "-1,0,1"
 			}
 		}
 	},
