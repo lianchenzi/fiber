@@ -267,7 +267,7 @@ def download():
     response = make_response(send_from_directory(directory, filename, as_attachment=True))
     response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('utf-8'))
     return response
-
+"""
 @socketio.on('connect', namespace='/test')
 def test_connect():
     #print ("connected")
@@ -282,7 +282,7 @@ def handle_message(message):
     socketio.send(message)
     # emit('my response')
 
-
+"""
 def packageResponse(code,msg, data): 
     response={}
     response["code"]=code
@@ -298,5 +298,5 @@ api.add_resource(Result,'/result',endpoint='Result')
 api.add_resource(TestObject,'/bhs',endpoint='TestObject')
 if __name__ == '__main__':
     app.debug=True
-    socketio.run(app)
-    #app.run(port=5000)
+    #socketio.run(app)
+    app.run(port=5000)
